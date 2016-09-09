@@ -3,12 +3,9 @@ from __future__ import division
 import numpy as np
 from keras.models import Sequential
 from keras.layers.recurrent import LSTM
+from keras.layers.core import Masking
 
-# Returns a pair of (inputData, expectedOutput)
-# input size, sequence size, batch size
-def getData(inSz, seqSz, btSz):
-	inData = np.random.binomial(1,0.5,size=(btSz, seqSz, inSz))
-	return (inData, inData.copy())
+from tasks.copy import CopyTask, CopyFirstTask
 
 # Return accurracy of output compared to target as a pair of
 # (wholeOutCorrect, bitsCorrect)
@@ -26,16 +23,20 @@ def analyzeRez(output, target, outSz):
 	return (wholeOutCorrect/(len(output) * len(output[0])), bitsCorrect/(len(output) * len(output[0]) * len(output[0][0])))
 
 # Baseline model: a LSTM with 2 layers
-seqSz = 10
+maxSeq = 20
 inSz = 8
 model = Sequential()
-model.add(LSTM(16, return_sequences=True, input_shape=(seqSz, inSz)))  # returns a sequence of vectors of dimension 16
+# The masking layer will ensure that padded values are removed from consideration
+model.add(Masking(mask_value=0, input_shape=(maxSeq, inSz)))
+model.add(LSTM(16, return_sequences=True))  # returns a sequence of vectors of dimension 16
 model.add(LSTM(inSz, return_sequences=True))  # returns a sequence of vectors of dimension inSz
-model.compile(loss='mean_squared_error', optimizer='rmsprop')
-#model.compile(loss='mean_squared_error', optimizer='sgd')
+model.compile(loss='mean_squared_error', optimizer='rmsprop') # sgd is crap
 
-data = getData(inSz, seqSz, 3000)
-model.fit(data[0], data[1], nb_epoch=10)
-data = getData(inSz, seqSz, 200)
-output = model.predict(data[0])
-print analyzeRez(output, data[1], inSz)
+task = CopyFirstTask(inSz, maxSeq)
+inData, target = task.getData(10, 3000)
+model.fit(inData, target, nb_epoch=15)
+inData, target = task.getData(20, 200)
+output = model.predict(inData)
+allCorrect, bitsCorrect = analyzeRez(output, target, inSz)
+print "Numbers correctly predicted: "+str(allCorrect*100)+"%"
+print "Bits correctly predicted: "+str(bitsCorrect*100)+"%"
