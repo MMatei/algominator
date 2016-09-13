@@ -10,8 +10,10 @@ class Task:
 	loss = 'mean_squared_error'
 
 	# Fix the input size, as well as the maximum sequence length that the model can support
+	# Define the output size as needed; this is the purview of the model
 	def __init__(self, inputSz, maxSeq):
 		self.inputSz = inputSz
+		self.outputSz = 0
 		self.maxSeq = maxSeq
 
 	# Given a sequence size and batch size, return a dataset (input, target)
@@ -24,7 +26,7 @@ class Task:
 
 	# Return accurracy of output compared to target as a pair of
 	# (wholeOutCorrect, bitsCorrect)
-	def analyzeRez(self, output, target, outSz):
+	def analyzeRez(self, output, target):
 		wholeOutCorrect = 0
 		bitsCorrect = 0
 		# we get numbers between 0 and 1, we need bits 0/1
@@ -32,7 +34,7 @@ class Task:
 		for i, sequence in enumerate(output):
 			for j, val in enumerate(sequence):
 				errors = int(np.absolute(val - target[i][j]).sum())
-				bitsCorrect += (outSz - errors)
+				bitsCorrect += (self.outputSz - errors)
 				if errors == 0:
 					wholeOutCorrect += 1
-		return (wholeOutCorrect/(output.size / outSz), bitsCorrect/output.size)
+		return (wholeOutCorrect/(output.size / self.outputSz), bitsCorrect/output.size)

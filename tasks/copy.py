@@ -8,6 +8,7 @@ from task import Task
 class CopyTask(Task):
 	def __init__(self, inputSz, maxSeq):
 		self.inputSz = inputSz
+		self.outputSz = inputSz
 		self.maxSeq = maxSeq
 
 	def getData(self, seqSz, batchSz):
@@ -19,6 +20,7 @@ class CopyTask(Task):
 class CopyFirstTask(Task):
 	def __init__(self, inputSz, maxSeq):
 		self.inputSz = inputSz
+		self.outputSz = inputSz
 		self.maxSeq = maxSeq
 
 	def getData(self, seqSz, batchSz):
@@ -34,6 +36,7 @@ class CopyFirstTask(Task):
 class IndexTask(Task):
 	def __init__(self, inputSz, maxSeq):
 		self.inputSz = inputSz
+		self.outputSz = inputSz
 		self.maxSeq = maxSeq
 		self.sequenceOut = False
 
@@ -48,14 +51,14 @@ class IndexTask(Task):
 		return (inData, np.array(target))
 
 	# Overriding because output shape is different
-	def analyzeRez(self, output, target, outSz):
+	def analyzeRez(self, output, target):
 		wholeOutCorrect = 0
 		bitsCorrect = 0
 		# we get numbers between 0 and 1, we need bits 0/1
 		output = np.around(output)
 		for i, val in enumerate(output):
 			errors = int(np.absolute(val - target[i]).sum())
-			bitsCorrect += (outSz - errors)
+			bitsCorrect += (self.outputSz - errors)
 			if errors == 0:
 				wholeOutCorrect += 1
-		return (wholeOutCorrect/(output.size / outSz), bitsCorrect/output.size)
+		return (wholeOutCorrect/(output.size / self.outputSz), bitsCorrect/output.size)
