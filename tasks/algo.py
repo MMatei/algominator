@@ -13,6 +13,14 @@ class GCDTask(Task):
 		self.maxSeq = 1
 		self.sequenceOut = False
 
+	def gcd(self, a, b):
+		while a != b:
+			if a > b:
+				a -= b
+			else:
+				b -= a
+		return a
+
     # For the purposes of this task, seqSz represents the nr of bits of the values in data, 0 < seqSz <= valLen
 	def getData(self, seqSz, batchSz):
 		if seqSz > self.valLen:
@@ -22,13 +30,13 @@ class GCDTask(Task):
 		target = np.zeros((batchSz, self.outputSz))
 		maxVal = pow(2, seqSz) - 1
 		for i in range(0, batchSz):
-			a = randint(0, maxVal)
-			b = randint(0, maxVal)
-			c = gcd(a, b)
+			a = randint(1, maxVal)
+			b = randint(1, maxVal)
+			c = self.gcd(a, b)
 			inData[i,:self.valLen] = self.toBinary(a)[self.valLen:]
 			inData[i,self.valLen:] = self.toBinary(b)[self.valLen:]
 			target[i,:] = self.toBinary(c)[self.valLen:]
-		return (inData, target)
+		return (inData.reshape((batchSz,1,self.inputSz)), target)
 
 	# Overriding because output shape is different
 	def analyzeRez(self, output, target):
