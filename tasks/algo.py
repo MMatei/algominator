@@ -1,17 +1,16 @@
 from __future__ import division
 import numpy as np
 from random import randint
-from task import Task
+from task import NoSeqTask
 
 # Given two values, output their greatest common divisor
 # each value is represented by valLen bits
-class GCDTask(Task):
+class GCDTask(NoSeqTask):
 	def __init__(self, valLen):
 		self.valLen = valLen
 		self.inputSz = 2 * valLen
 		self.outputSz = valLen
 		self.maxSeq = 1
-		self.sequenceOut = False
 
 	def gcd(self, a, b):
 		while a != b:
@@ -37,16 +36,3 @@ class GCDTask(Task):
 			inData[i,self.valLen:] = self.toBinary(b)[self.valLen:]
 			target[i,:] = self.toBinary(c)[self.valLen:]
 		return (inData.reshape((batchSz,1,self.inputSz)), target)
-
-	# Overriding because output shape is different
-	def analyzeRez(self, output, target):
-		wholeOutCorrect = 0
-		bitsCorrect = 0
-		# we get numbers between 0 and 1, we need bits 0/1
-		output = np.around(output)
-		for i, val in enumerate(output):
-			errors = int(np.absolute(val - target[i]).sum())
-			bitsCorrect += (self.outputSz - errors)
-			if errors == 0:
-				wholeOutCorrect += 1
-		return (wholeOutCorrect/(output.size / self.outputSz), bitsCorrect/output.size)

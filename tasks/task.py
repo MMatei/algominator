@@ -38,3 +38,21 @@ class Task:
 				if errors == 0:
 					wholeOutCorrect += 1
 		return (wholeOutCorrect/(output.size / self.outputSz), bitsCorrect/output.size)
+
+# A task that doesn't output a sequence
+# Therefore, it's result has a different shape, and a different analyzeRez
+class NoSeqTask(Task):
+	sequenceOut = False
+
+	# Overriding because output shape is different
+	def analyzeRez(self, output, target):
+		wholeOutCorrect = 0
+		bitsCorrect = 0
+		# we get numbers between 0 and 1, we need bits 0/1
+		output = np.around(output)
+		for i, val in enumerate(output):
+			errors = int(np.absolute(val - target[i]).sum())
+			bitsCorrect += (self.outputSz - errors)
+			if errors == 0:
+				wholeOutCorrect += 1
+		return (wholeOutCorrect/(output.size / self.outputSz), bitsCorrect/output.size)
