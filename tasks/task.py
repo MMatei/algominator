@@ -21,6 +21,12 @@ class Task:
 	def getData(self, seqSz, batchSz):
 		raise NotImplementedError
 
+	# The dataset returned by getData is BALANCED
+	# But, depending on the problem, this may not be realistic
+	# In such cases, use this second function to obtain testing examples
+	def getDataUnbalanced(self, seqSz, batchSz):
+		return getData(self, seqSz, batchSz)
+
 	def toBinary(self, number):
 		return np.fromstring(np.binary_repr(number, width=self.inputSz), dtype=np.uint8) - 48
 

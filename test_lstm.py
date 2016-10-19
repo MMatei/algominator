@@ -13,7 +13,7 @@ from tasks.simpleOp import SumTask, ChoiceTask
 
 ts1 = time.time()
 # task = CopyTask(8, 20)
-task = ChoiceTask(16)
+task = GCDTask(16)
 # Baseline model: a LSTM with 2 layers
 model = Sequential()
 # The masking layer will ensure that padded values are removed from consideration
@@ -26,11 +26,11 @@ ts2 = time.time()
 print "Initialization completed in " + str(ts2 - ts1) +" seconds."
 
 trainX, trainY = task.getData(12, 3300)
-testX, testY = task.getData(16, 200)
+testX, testY = task.getDataUnbalanced(16, 200)
 ts1 = time.time()
 print "Data generated in " + str(ts1 - ts2) +" seconds."
 
-history = model.fit(trainX, trainY, nb_epoch=20, validation_split=0.1, verbose=2)
+history = model.fit(trainX, trainY, nb_epoch=30, validation_split=0.1, verbose=2)
 ts2 = time.time()
 print "Model trained in " + str(ts2 - ts1) +" seconds."
 
