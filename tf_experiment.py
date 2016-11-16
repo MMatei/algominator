@@ -50,23 +50,22 @@ def forward(_input):
 	X = tf.concat(1, [_input, output])
 	for iteration in range(0, maxCycles):
 		tf.cond(tf.greater(done, stopCondition)[0,0], g, f)
-	iteration = -1
-	return output, iteration
+	return output
 
-# iter is the number of the iteration at which the model stopped
-# it is -1 if the model didn't stop of its own accord
-def loss(target):
-	global zeroOut, yesDone, notDone
-	global output, done, iteration
-	# model fails to stop, no error for computation, serios error for doneModel
-	if iteration < 0:
-		return tf.mul(output, zeroOut), tf.square(tf.sub(notDone, done))
-	# model has stopped; mse for output, no error for done
-	else:
-		return tf.square(tf.sub(target, output)), tf.mul(done, yesDone)
 
 LR = 0.001
-def train(e1, e2):
+def train(target):
+	global zeroOut, yesDone, notDone
+	global output, done
+	# model fails to stop, no error for computation, serios error for doneModel
+	# model has stopped; mse for output, no error for done
+	e1 = tf.cond(tf.greater(done, stopCondition)[0,0],
+		lambda: tf.square(tf.sub(target, output)),
+		lambda: tf.mul(output, zeroOut))
+	e2 = tf.cond(tf.greater(done, stopCondition)[0,0],
+		lambda: tf.mul(done, yesDone),
+		lambda: tf.square(tf.sub(notDone, done)))
+	print 'computational graph built'
 	with tf.Session() as session:
 		session.run(tf.initialize_all_variables())
 		train_step = tf.train.GradientDescentOptimizer(LR).minimize(e1)
@@ -86,7 +85,5 @@ X = trainX[0]
 T = trainY[0]
 print 'got data'
 Y = forward(tf.Variable(X))
-e1, e2 = loss(T)
-print 'computational graph built'
-train(e1, e2)
+train(T)
 print 'THE END'
