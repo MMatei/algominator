@@ -1,6 +1,5 @@
 from __future__ import division
 import numpy as np
-from keras.preprocessing.sequence import pad_sequences
 from random import randint
 from task import Task, NoSeqTask
 
@@ -12,8 +11,7 @@ class CopyTask(Task):
 		self.maxSeq = maxSeq
 
 	def getData(self, seqSz, batchSz):
-		inData = np.random.binomial(1,0.5,size=(batchSz, seqSz, self.inputSz))
-		inData = pad_sequences(inData, maxlen=self.maxSeq, padding='post')
+		inData = np.random.binomial(1,0.5,size=(seqSz, self.inputSz, batchSz))
 		return (inData, inData.copy())
 
 # Given a sequence of values, always write the first value in the sequence
@@ -24,12 +22,10 @@ class CopyFirstTask(Task):
 		self.maxSeq = maxSeq
 
 	def getData(self, seqSz, batchSz):
-		inData = np.random.binomial(1,0.5,size=(batchSz, seqSz, self.inputSz))
-		target = []
-		for seq in inData:
-			target.append([seq[0]] * seqSz)
-		inData = pad_sequences(inData, maxlen=self.maxSeq, padding='post')
-		target = pad_sequences(np.array(target), maxlen=self.maxSeq, padding='post')
+		inData = np.random.binomial(1,0.5,size=(seqSz, self.inputSz, batchSz))
+		target = inData.copy()
+		for i in range(1, seqSz):
+			target[i,:,:] = target[0,:,:]
 		return (inData, target)
 
 # Given a sequence of values, the first of which is an index, write sequence[index]
@@ -40,11 +36,10 @@ class IndexTask(NoSeqTask):
 		self.maxSeq = maxSeq
 
 	def getData(self, seqSz, batchSz):
-		inData = np.random.binomial(1,0.5,size=(batchSz, seqSz, self.inputSz))
+		inData = np.random.binomial(1,0.5,size=(seqSz, self.inputSz, batchSz))
 		target = []
-		for seq in inData:
+		for i in range(0,batchSz):
 			index = randint(0, seqSz-2)
-			seq[0] = self.toBinary(index)
+			inData[0,:,i] = self.toBinary(index)
 			target.append(seq[index + 1])
-		inData = pad_sequences(inData, maxlen=self.maxSeq, padding='post')
 		return (inData, np.array(target))

@@ -37,28 +37,27 @@ class Task:
 		bitsCorrect = 0
 		# we get numbers between 0 and 1, we need bits 0/1
 		output = np.around(output)
-		for i, sequence in enumerate(output):
-			for j, val in enumerate(sequence):
-				errors = int(np.absolute(val - target[i][j]).sum())
+		for i, batch in enumerate(output):
+			for j in range(0, output.shape[2]): # output.shape[2] = batchSz
+				errors = int(np.absolute(batch[:,j] - target[i,:,j]).sum())
 				bitsCorrect += (self.outputSz - errors)
 				if errors == 0:
 					wholeOutCorrect += 1
-		return (wholeOutCorrect/(output.size / self.outputSz), bitsCorrect/output.size)
+		return (wholeOutCorrect / (output.size/self.outputSz), bitsCorrect/output.size)
 
 # A task that doesn't output a sequence
-# Therefore, it's result has a different shape, and a different analyzeRez
+# Therefore, its result has a different shape (no sequence length!), and thus a different analyzeRez
 class NoSeqTask(Task):
 	sequenceOut = False
 
-	# Overriding because output shape is different
 	def analyzeRez(self, output, target):
 		wholeOutCorrect = 0
 		bitsCorrect = 0
 		# we get numbers between 0 and 1, we need bits 0/1
 		output = np.around(output)
-		for i, val in enumerate(output):
-			errors = int(np.absolute(val - target[i]).sum())
+		for i in range(0, output.shape[1]):
+			errors = int(np.absolute(output[:,i] - target[:,i]).sum())
 			bitsCorrect += (self.outputSz - errors)
 			if errors == 0:
 				wholeOutCorrect += 1
-		return (wholeOutCorrect/(output.size / self.outputSz), bitsCorrect/output.size)
+		return (wholeOutCorrect / (output.size/self.outputSz), bitsCorrect/output.size)
