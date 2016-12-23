@@ -22,13 +22,16 @@ class RNN:
 			batchSize = self.batchSize
 		self.h = np.zeros((self.cells, batchSize)) # hidden state
 		self.H = [] # history of hidden states
+		self.Y = [] # history of pre-output
 
 	def forward(self, X):
 		# update the hidden state
 		self.h = np.tanh(np.dot(self.W_hh, self.h) + np.dot(self.W_xh, X) + self.bh)
 		self.H.append(self.h)
 		# compute the output vector
-		return np.dot(self.W_hy, self.h) + self.by
+		y = np.dot(self.W_hy, self.h) + self.by
+		self.Y.append(y)
+		return np.tanh(y)
 
 	def backward(self, X, loss):
 		self.dWxh = np.zeros_like(self.W_xh)
@@ -39,7 +42,7 @@ class RNN:
 		dhnext = np.zeros_like(self.h)
 		lossDown = [0] * len(loss)
 		for t in range(len(loss)-1,-1,-1):
-			dy = loss[t]
+			dy = (1 - self.Y[t] * self.Y[t]) * loss[t] # backprop through tanh nonlinearity
 			self.dWhy += np.dot(dy, self.H[t].T)
 			self.dby += np.sum(dy,axis=1,keepdims=True)
 			dh = np.dot(self.W_hy.T, dy) + dhnext # backprop into h
@@ -58,6 +61,7 @@ class RNN:
 		for param, dparam, mom in zip([self.W_xh, self.W_hh, self.W_hy, self.bh, self.by], [self.dWxh, self.dWhh, self.dWhy, self.dbh, self.dby], [self.mWxh, self.mWhh, self.mWhy, self.mbh, self.mby]):
 			mom += dparam * dparam
 			param += -lr * dparam / np.sqrt(mom + 1e-8) # adagrad update
+
 
 # No batch computation - both inefficient and with far poorer results; leaving this here for historical purposes
 class BasicRNN:

@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from models.rnn import RNN
+from models.sequential import Sequential
 
 from tasks.copy import CopyTask, CopyFirstTask, IndexTask
 from tasks.algo import GCDTask
@@ -15,14 +16,17 @@ def testModelOn(testX, testY, task):
 		model.reset(testX.shape[2]) # set to compute whole batch at once
 		Y = model.forward(X)
 		output.append(Y)
-	loss = np.square(np.array(output) - testY).sum() / testY.size
+	output = np.array(output)
+	loss = np.square(output - testY).sum() / testY.size
 	allCorrect, bitsCorrect = task.analyzeRez(output, testY)
 	return loss, allCorrect, bitsCorrect
 
 ts1 = time.time()
 task = CopyTask(8, 10)
 batchSz = 30
-model = RNN(8, 8, batchSz)
+model = Sequential()
+model.add(RNN(8, 8, batchSz))
+model.add(RNN(8, 8, batchSz))
 
 ts2 = time.time()
 print "Initialization completed in " + str(ts2 - ts1) +" seconds."
@@ -34,7 +38,7 @@ history = {'loss':[],'val_loss':[],'val_acc':[],'val_acce':[]}
 ts1 = time.time()
 print "Data generated in " + str(ts1 - ts2) +" seconds."
 
-for epoch in range(0,30):
+for epoch in range(0,50):
 	avgLoss = 0
 	for i in range(0,100):
 		model.reset()
@@ -43,8 +47,7 @@ for epoch in range(0,30):
 		for X in seqX:
 			Y.append(model.forward(X))
 		dY = np.array(Y) - trainY[:,:,batchSz*i:batchSz*(i+1)]
-		model.backward(seqX, dY)
-		model.updateParams(0.1)
+		model.backward(dY, 0.1)
 		avgLoss += np.square(dY).sum()
 	history['loss'].append(avgLoss/30000) # divide by total nr of outputs over all examples
 	loss, allCorrect, bitsCorrect = testModelOn(validX, validY, task)
@@ -65,7 +68,7 @@ plt.plot(history['val_acce'])
 plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
-plt.legend(['%% numbers correct', '%% bits correct'], loc='upper left')
+plt.legend(['% numbers correct', '% bits correct'], loc='upper left')
 
 # summarize history for loss
 plt.figure(2)

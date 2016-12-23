@@ -36,7 +36,9 @@ class Task:
 		wholeOutCorrect = 0
 		bitsCorrect = 0
 		# we get numbers between 0 and 1, we need bits 0/1
-		output = np.around(output)
+		# output = np.around(output).astype(int)
+		output[output <= 0] = 0
+		output[output > 0] = 1
 		for i, batch in enumerate(output):
 			for j in range(0, output.shape[2]): # output.shape[2] = batchSz
 				errors = int(np.absolute(batch[:,j] - target[i,:,j]).sum())
@@ -54,7 +56,7 @@ class NoSeqTask(Task):
 		wholeOutCorrect = 0
 		bitsCorrect = 0
 		# we get numbers between 0 and 1, we need bits 0/1
-		output = np.around(output)
+		output = np.around(output).astype(int)
 		for i in range(0, output.shape[1]):
 			errors = int(np.absolute(output[:,i] - target[:,i]).sum())
 			bitsCorrect += (self.outputSz - errors)
