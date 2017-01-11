@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from models.rnn import RNN
-from pso_rnn import PSORNN
+from pso_rnn import PSORNN, BPSORNN, GPSORNN
+from chaos import ChaosPSORNN
 
 from tasks.copy import CopyTask, CopyFirstTask, IndexTask
 from tasks.algo import GCDTask
