@@ -14,12 +14,12 @@ class Particle:
 	LINGEN = 100 # nr of generations in which w progresses linearly
 	K = 100 # the bigger it is, the more gentle the asimptotic progression is
 
-	def __init__(self, model):
-		self.model = model
+	def __init__(self, posShape):
+		self.posShape = posShape
 		self.pos = np.random.uniform(-1,1,#-0.01,0.01,
-			(model.W_xh.shape[0],model.W_xh.shape[1]+model.W_hh.shape[1]+model.W_hy.shape[1]+2))
+			posShape)
 		self.bestPos = self.pos.copy()
-		self.v = np.random.uniform(self.VMIN,self.VMAX,self.bestPos.shape)
+		self.v = np.random.uniform(self.VMIN, self.VMAX, self.pos.shape)
 		self.bestFitn = (9999,0,0)
 
 	def updateW(self, gen):
@@ -41,7 +41,7 @@ class Particle:
 		np.clip(self.pos, -1, 1, out=self.pos) # we're not allowed outside the playground
 
 	def copy(self):
-		p = Particle(self.model)
+		p = Particle(self.posShape)
 		p.pos = self.pos.copy()
 		p.bestPos = self.bestPos.copy()
 		p.v = self.v.copy()
@@ -84,12 +84,21 @@ def isGt(fitness1, fitness2):
 		return fitness1[0] < fitness2[0]
 
 class PSORNN:
-	MAXGEN = 400 # max nr of generations of search
+	MAXGEN = 300 # max nr of generations of search
 
 	def __init__(self, model, task):
 		self.model = model
 		self.task = task
 		self.testX, self.testY = task.getData(10, 200)
+		self.posShape = 0
+		self.shapes = [] # so there's no need to look them up again
+		for layer in model.layers:
+			self.posShape += (layer.W_xh.shape[1]+layer.W_hh.shape[1]+layer.W_hy.shape[1]+2) * layer.W_xh.shape[0]
+			self.shapes.append(layer.W_xh.shape)
+			self.shapes.append(layer.W_hh.shape)
+			self.shapes.append(layer.W_hy.shape)
+			self.shapes.append(layer.bh.shape)
+			self.shapes.append(layer.by.shape)
 
 	def testModel(self):
 		output = []
@@ -103,17 +112,30 @@ class PSORNN:
 		return loss, allCorrect, bitsCorrect
 
 	def fitness(self, particle):
+		i = 0
 		k = 0
-		# for i, layer in enumerate(self.model.layers):
-		self.model.W_xh = particle.pos[:,k:k+self.model.W_xh.shape[1]]
-		k += self.model.W_xh.shape[1]
-		self.model.W_hh = particle.pos[:,k:k+self.model.W_hh.shape[1]]
-		k += self.model.W_xh.shape[1]
-		self.model.W_hy = particle.pos[:,k:k+self.model.W_hy.shape[1]]
-		k += self.model.W_hy.shape[1]
-		self.model.bh = particle.pos[:,k:k+1]
-		k += 1
-		self.model.by = particle.pos[:,k:k+1]
+		shapes = self.shapes
+		for layer in self.model.layers:
+			s = shapes[i][0]*shapes[i][1]
+			layer.W_xh = np.reshape(particle.pos[k:k+s], shapes[i])
+			k += s
+			i += 1
+			s = shapes[i][0]*shapes[i][1]
+			layer.W_hh = np.reshape(particle.pos[k:k+s], shapes[i])
+			k += s
+			i += 1
+			s = shapes[i][0]*shapes[i][1]
+			layer.W_hy = np.reshape(particle.pos[k:k+s], shapes[i])
+			k += s
+			i += 1
+			s = shapes[i][0]*shapes[i][1]
+			layer.bh = np.reshape(particle.pos[k:k+s], shapes[i])
+			k += s
+			i += 1
+			s = shapes[i][0]*shapes[i][1]
+			layer.by = np.reshape(particle.pos[k:k+s], shapes[i])
+			k += s
+			i += 1
 		return self.testModel()
 
 	def train(self, numPart):
@@ -122,7 +144,7 @@ class PSORNN:
 		gBestFit = (9999,0,0)
 		ts = time.time()
 		for i in range(0, numPart):
-			p = Particle(self.model)
+			p = Particle(self.posShape)
 			P.append(p)
 			p.updateFitness(self.fitness(p))
 			if isGt(p.fitn, gBestFit):
@@ -140,25 +162,52 @@ class PSORNN:
 				fitn = self.fitness(p)
 				p.updateFitness(fitn)
 				if isGt(fitn, gBestFit):
-					print str(gBestFit)+" "+str(fitn)
+					print str(gen)+') '+str(fitn)
 					gBestFit = fitn
 					bestP = p.copy()
 					unchanged = False
 					epochUnchanged = 0
 			if unchanged:
-				print 'unchanged'
+				print str(gen)+') unchanged'
 				epochUnchanged += 1
 			gen += 1
 		print self.fitness(bestP) # shortcut to place best parameters in model
 
 class BPSORNN(PSORNN):
+	def modelToPart(self, p):
+		i = 0
+		k = 0
+		shapes = self.shapes
+		for layer in self.model.layers:
+			s = shapes[i][0]*shapes[i][1]
+			p.pos[k:k+s] = layer.W_xh.flatten()
+			k += s
+			i += 1
+			s = shapes[i][0]*shapes[i][1]
+			p.pos[k:k+s] = layer.W_hh.flatten()
+			k += s
+			i += 1
+			s = shapes[i][0]*shapes[i][1]
+			p.pos[k:k+s] = layer.W_hy.flatten()
+			k += s
+			i += 1
+			s = shapes[i][0]*shapes[i][1]
+			p.pos[k:k+s] = layer.bh.flatten()
+			k += s
+			i += 1
+			s = shapes[i][0]*shapes[i][1]
+			p.pos[k:k+s] = layer.by.flatten()
+			k += s
+			i += 1
+		p.bestPos = p.pos.copy()
+
 	def train(self, numPart):
 		# Initialize particles
 		P = []
 		gBestFit = (9999,0,0)
 		ts = time.time()
 		for i in range(0, numPart):
-			p = Particle(self.model)
+			p = Particle(self.posShape)
 			P.append(p)
 			p.updateFitness(self.fitness(p))
 			if isGt(p.fitn, gBestFit):
@@ -181,24 +230,24 @@ class BPSORNN(PSORNN):
 					bestP = p.copy()
 					unchanged = False
 					epochUnchanged = 0
+					# Use backprop to train bestP a bit
+					self.model.reset(self.testX.shape[2])
+					Y = []
+					for X in self.testX:
+						Y.append(self.model.forward(X))
+					dY = np.array(Y) - self.testY
+					self.model.backward(dY, 0.1)
+					fitn = self.testModel()
+					print str(fitn) + ' ' + str(gBestFit)
+					if isGt(fitn, gBestFit): # if improved fitness, change bestP accordingly
+						print 'BP increase ' + str(fitn)
+						gBestFit = fitn
+						self.modelToPart(bestP)
 			if unchanged:
 				print 'unchanged'
 				epochUnchanged += 1
 			gen += 1
 		print self.fitness(bestP) # shortcut to place best parameters in model
-		# Doing backpropagation to inch towards better results
-		# TODO: investigate number of epochs; will outshine other methods since BP is so damn good
-		trainX, trainY = self.task.getData(10, 2100)
-		batchSz = 30 # TODO: this is currently determined by model
-		for i in range(0,70):
-			self.model.reset()
-			seqX = trainX[:,:,batchSz*i:batchSz*(i+1)]
-			Y = []
-			for X in seqX:
-				Y.append(self.model.forward(X))
-			dY = np.array(Y) - trainY[:,:,batchSz*i:batchSz*(i+1)]
-			self.model.backward(seqX, dY)
-			self.model.updateParams(0.1)
 
 class GPSORNN(PSORNN):
 

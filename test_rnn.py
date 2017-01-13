@@ -26,7 +26,10 @@ task = CopyTask(8, 10)
 batchSz = 30
 model = Sequential()
 model.add(RNN(8, 8, batchSz))
-model.add(RNN(8, 8, batchSz))
+# model.add(RNN(8, 32, batchSz))
+# model.add(RNN(32, 32, batchSz))
+# model.add(RNN(32, 32, batchSz))
+# model.add(RNN(32, 8, batchSz))
 
 ts2 = time.time()
 print "Initialization completed in " + str(ts2 - ts1) +" seconds."
@@ -49,7 +52,7 @@ for epoch in range(0,50):
 		dY = np.array(Y) - trainY[:,:,batchSz*i:batchSz*(i+1)]
 		model.backward(dY, 0.1)
 		avgLoss += np.square(dY).sum()
-	history['loss'].append(avgLoss/30000) # divide by total nr of outputs over all examples
+	history['loss'].append(avgLoss/trainY.size) # divide by total nr of outputs over all examples
 	loss, allCorrect, bitsCorrect = testModelOn(validX, validY, task)
 	history['val_loss'].append(loss)
 	history['val_acc'].append(bitsCorrect)
@@ -65,7 +68,7 @@ print "Bits correctly predicted: "+str(bitsCorrect*100)+"%"
 plt.figure(1)
 plt.plot(history['val_acc'])
 plt.plot(history['val_acce'])
-plt.title('model accuracy')
+plt.title('validation accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['% numbers correct', '% bits correct'], loc='upper left')

@@ -6,9 +6,10 @@ class Sequential:
 		self.layers.append(layer)
 
 	def reset(self, batchSize=None):
-		self.histoX = [[]] * 32 # if bigger possible sequences, alter this
+		self.histoX = []
 		for layer in self.layers:
 			layer.reset(batchSize)
+			self.histoX.append([])
 
 	def forward(self, X):
 		for i, layer in enumerate(self.layers):

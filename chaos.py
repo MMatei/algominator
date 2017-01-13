@@ -9,7 +9,10 @@ class ChaosPSORNN(PSORNN):
 			cx = (p.pos + 1) / 2
 			cx = 4 * cx * (1 - cx)
 			p.pos = -1 + cx * 2
-			if isGt(self.fitness(p), p.fitn):
+			f = self.fitness(p)
+			if isGt(f, p.fitn):
+				print 'Chaos improvement ' + str(f)
+				p.updateFitness(f)
 				return p
 		p.pos = x
 		return p
@@ -20,7 +23,7 @@ class ChaosPSORNN(PSORNN):
 		gBestFit = (9999,0,0)
 		ts = time.time()
 		for i in range(0, numPart):
-			p = Particle(self.model)
+			p = Particle(self.posShape)
 			P.append(p)
 			p.updateFitness(self.fitness(p))
 			if isGt(p.fitn, gBestFit):
@@ -38,9 +41,9 @@ class ChaosPSORNN(PSORNN):
 				fitn = self.fitness(p)
 				p.updateFitness(fitn)
 				if isGt(fitn, gBestFit):
-					print str(gBestFit)+" "+str(fitn)
-					gBestFit = fitn
+					print fitn
 					bestP = self.chaosLocalSearch(p.copy())
+					gBestFit = bestP.fitn
 					unchanged = False
 					epochUnchanged = 0
 			if unchanged:
