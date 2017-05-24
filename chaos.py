@@ -47,7 +47,7 @@ class ChaosPSORNN(PSORNN):
 					unchanged = False
 					epochUnchanged = 0
 			if unchanged:
-				print 'unchanged'
+				print str(gen)+') unchanged'
 				epochUnchanged += 1
 			gen += 1
 		print self.fitness(bestP) # shortcut to place best parameters in model

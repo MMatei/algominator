@@ -9,6 +9,7 @@ from models.sequential import Sequential
 from tasks.copy import CopyTask, CopyFirstTask, IndexTask
 from tasks.algo import GCDTask
 from tasks.simpleOp import SumTask, ChoiceTask
+from tasks.signal import TimeSignal
 
 def testModelOn(testX, testY, task):
 	output = []
@@ -23,13 +24,17 @@ def testModelOn(testX, testY, task):
 
 ts1 = time.time()
 task = CopyTask(8, 10)
+# task = TimeSignal(15)
 batchSz = 30
 model = Sequential()
 model.add(RNN(8, 8, batchSz))
-# model.add(RNN(8, 32, batchSz))
+model.add(RNN(8, 8, batchSz))
+model.add(RNN(8, 8, batchSz))
+model.add(RNN(8, 8, batchSz))
+# model.add(RNN(2, 32, batchSz))
 # model.add(RNN(32, 32, batchSz))
 # model.add(RNN(32, 32, batchSz))
-# model.add(RNN(32, 8, batchSz))
+# model.add(RNN(32, 1, batchSz))
 
 ts2 = time.time()
 print "Initialization completed in " + str(ts2 - ts1) +" seconds."
@@ -61,6 +66,7 @@ ts2 = time.time()
 print "Model trained in " + str(ts2 - ts1) +" seconds."
 
 loss, allCorrect, bitsCorrect = testModelOn(testX, testY, task)
+print loss
 print "Numbers correctly predicted: "+str(allCorrect*100)+"%"
 print "Bits correctly predicted: "+str(bitsCorrect*100)+"%"
 

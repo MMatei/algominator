@@ -54,11 +54,7 @@ class GParticle(Particle):
 	def update(self, gBest, particles):
 		force = 0
 		for p in particles:
-			force += random.random() * p.mass * self.mass * (p.pos - self.pos) #/ np.linalg.norm(p.pos*self.pos)
-		# print force
-		if force[0][0] == 0:
-			print self.pos
-			print self.mass
+			force += random.random() * p.mass * self.mass * (p.pos - self.pos) / np.linalg.norm(p.pos*self.pos)
 		acc = force / self.mass
 		self.v = Particle.w * self.v + self.C1 * random.random() * acc + self.C2 * random.random() * (gBest - self.pos)
 		np.clip(self.v, self.VMIN, self.VMAX, out=self.v)
@@ -69,19 +65,26 @@ class GParticle(Particle):
 	# Must be called before update
 	def updateMass(self, bestFit, worstFit):
 		# mass must be reduced to scalar; this is probably not the best idea
-		self.mass = (self.fitn[0] - worstFit[0]) / (bestFit[0] - worstFit[0])
+		# since we're using loss, the best is the worst and viceversa
+		self.mass = (self.fitn[0] - bestFit[0]) / (worstFit[0] - bestFit[0])
 		if self.mass >= -1e-8 and self.mass < 1e-8:
 			self.mass = 1e-8
 
 
 # Is fitness1 greater than fitness2?
 def isGt(fitness1, fitness2):
-	if fitness1[2] < fitness2[2]:
-		return False
-	elif fitness1[1] < fitness2[1]:
-		return False
-	else: # compare loss
+	# if fitness1[2] < fitness2[2]:
+	# 	return False
+	# elif fitness1[1] < fitness2[1]:
+	# 	return False
+	# else: # compare loss
+	# 	return fitness1[0] < fitness2[0]
+	if fitness1[2] == fitness2[2]:
 		return fitness1[0] < fitness2[0]
+	diff = fitness1[2] - fitness2[2]
+	if abs(diff) < 0.001: # this will stop marginally better solutions
+		return False # cheap way to ensure algo doesn't keep running for infime gains
+	return diff > 0
 
 class PSORNN:
 	MAXGEN = 300 # max nr of generations of search
@@ -225,7 +228,6 @@ class BPSORNN(PSORNN):
 				fitn = self.fitness(p)
 				p.updateFitness(fitn)
 				if isGt(fitn, gBestFit):
-					print fitn
 					gBestFit = fitn
 					bestP = p.copy()
 					unchanged = False
@@ -238,13 +240,13 @@ class BPSORNN(PSORNN):
 					dY = np.array(Y) - self.testY
 					self.model.backward(dY, 0.1)
 					fitn = self.testModel()
-					print str(fitn) + ' ' + str(gBestFit)
+					print str(gen)+') gbest: '+str(gBestFit) + ' BP rez: ' + str(fitn)
 					if isGt(fitn, gBestFit): # if improved fitness, change bestP accordingly
-						print 'BP increase ' + str(fitn)
+						print 'BP moved gbest!'
 						gBestFit = fitn
 						self.modelToPart(bestP)
 			if unchanged:
-				print 'unchanged'
+				print str(gen)+' unchanged'
 				epochUnchanged += 1
 			gen += 1
 		print self.fitness(bestP) # shortcut to place best parameters in model
@@ -258,7 +260,7 @@ class GPSORNN(PSORNN):
 		gWorstFit = (0, 100, 100)
 		ts = time.time()
 		for i in range(0, numPart):
-			p = GParticle(self.model)
+			p = GParticle(self.posShape)
 			P.append(p)
 			p.updateFitness(self.fitness(p))
 			if isGt(p.fitn, gBestFit):
