@@ -11,7 +11,7 @@ class CopyTask(Task):
 		self.maxSeq = maxSeq
 
 	def getData(self, seqSz, batchSz):
-		inData = np.random.binomial(1,0.5,size=(seqSz, self.inputSz, batchSz))
+		inData = np.random.randint(2, size=(seqSz, batchSz, self.inputSz)) * 2 - 1
 		return (inData, inData.copy())
 
 # Given a sequence of values, always write the first value in the sequence
@@ -22,7 +22,7 @@ class CopyFirstTask(Task):
 		self.maxSeq = maxSeq
 
 	def getData(self, seqSz, batchSz):
-		inData = np.random.binomial(1,0.5,size=(seqSz, self.inputSz, batchSz))
+		inData = np.random.randint(2, size=(seqSz, batchSz, self.inputSz)) * 2 - 1
 		target = inData.copy()
 		for i in range(1, seqSz):
 			target[i,:,:] = target[0,:,:]

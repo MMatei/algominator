@@ -35,15 +35,14 @@ class Task:
 	def analyzeRez(self, output, target):
 		wholeOutCorrect = 0
 		bitsCorrect = 0
-		# we get numbers between 0 and 1, we need bits 0/1
-		# output = np.around(output).astype(int)
-		output[output <= 0] = 0
+		# approximate numbers to the limits of the interval
+		output[output <= 0] = -1
 		output[output > 0] = 1
-		for i, batch in enumerate(output):
-			for j in range(0, output.shape[2]): # output.shape[2] = batchSz
-				errors = int(np.absolute(batch[:,j] - target[i,:,j]).sum())
-				bitsCorrect += (self.outputSz - errors)
-				if errors == 0:
+		for s in range(0, output.shape[0]):
+			for b in range(0, output.shape[1]):
+				correct = int(np.absolute(output[s,b,:] + target[s,b,:]).sum() / 2)
+				bitsCorrect += correct
+				if correct == self.outputSz:
 					wholeOutCorrect += 1
 		return (wholeOutCorrect / (output.size/self.outputSz), bitsCorrect/output.size)
 
