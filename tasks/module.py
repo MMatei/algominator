@@ -1,11 +1,14 @@
+from __future__ import division
 import numpy as np
 from random import randint
 from task import Task
+import torch
+from torch.autograd import Variable
 
 class AddTask(Task):
 	def __init__(self):
 		self.inputSz = 22
-		self.outputSz = 11
+		self.outputSz = 10
 
 	def getData(self, seqSz, batchSz):
 		if seqSz < 2:
@@ -28,11 +31,23 @@ class AddTask(Task):
 			inData[seqSz-1,b,21] = 1
 			target[seqSz-1,b] = carry
 		return inData, target
+	def analyzeRez(self, output, target):
+		correct = 0
+		total = 0
+		for b in range(0, target.shape[1]):
+			crct = 0
+			for s in range(0, target.shape[0]):
+				if output[s][b].argmax() == target[s,b]:
+					crct += 1
+			if crct == target.shape[0]:
+				total += 1
+			correct += crct
+		return (correct / (target.size), total / target.shape[1])
 
 class SubTask(Task):
 	def __init__(self):
 		self.inputSz = 22
-		self.outputSz = 11
+		self.outputSz = 10
 
 	def getData(self, seqSz, batchSz):
 		if seqSz < 2:
@@ -57,3 +72,15 @@ class SubTask(Task):
 			inData[seqSz-1,b,21] = 1
 			target[seqSz-1,b] = carry
 		return inData, target
+	def analyzeRez(self, output, target):
+		correct = 0
+		total = 0
+		for b in range(0, target.shape[1]):
+			crct = 0
+			for s in range(0, target.shape[0]):
+				if output[s][b].argmax() == target[s,b]:
+					crct += 1
+			if crct == target.shape[0]:
+				total += 1
+			correct += crct
+		return (correct / (target.size), total / target.shape[1])
