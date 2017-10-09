@@ -134,7 +134,7 @@ class MemoryTask(Task):
 		self.inputSz = 22
 		self.outputSz = 11
 
-	def getDataStress(self, seqSz, batchSz, unused=True):
+	def getData(self, seqSz, batchSz):
 		if seqSz < 2:
 			print("Sequence size less than 2!")
 			return None
